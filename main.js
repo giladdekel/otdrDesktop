@@ -1,16 +1,12 @@
-
-const { BrowserWindow, app, ipcMain, Notification } = require('electron');
+const { BrowserWindow, app, ipcMain, Notification } = require("electron");
 const notifier = require("node-notifier");
-const path = require('path');
+const path = require("path");
 
 const isDev = !app.isPackaged;
 
 //const axios = require("axios");
 
 const log4js = require("log4js");
-
-
-
 
 const socketIOClient = require("socket.io-client");
 
@@ -33,75 +29,67 @@ logger.trace("\n\n\n\n\n\n\n");
 
 logger.trace("Entering OTDR testing");
 
-
-
-
-sk.on("onFailure", (data) => {
-  console.log("onFailure");
-  // console.log("data :", data);
-  console.log("timeFailed: ", data.time);
-
-  console.log("lengthFailed: ", data.length);
-  ////logger file
-
-  logger.warn(`length of failure: ${data.length}`);
-
-  /////alert in the desktop:
-if(Number(data.length)===0){
-  notifier.notify({
-    title: "OTDR Faliure",
-    message: `no fiber`,
-    icon: path.join(__dirname, 'images/failure.png'), // Absolute path (doesn't work on balloons)
-  });
-}
-else{
-   notifier.notify({
-    title: "OTDR Faliure",
-    message: `fiber break at : ${data.length}`,
-    icon: path.join(__dirname, 'images/failure.png'), // Absolute path (doesn't work on balloons)
-  }); 
-}
-
-
-  notifier.on('click', function (notifierObject, options, event) {
-    // Triggers if `wait: true` and user clicks notification
-
-    // console.log("fail click")
-    sk.emit("muteVolume");
-  
-    
-  });
-  
-});
-
-
-
-
-sk.on("onSuccess", (data) => {
-  console.log("onSuccess");
+sk.on("onFiberChange", (data) => {
+  console.log("onFiberChange");
   // console.log("data :", data);
 
-  console.log("timeSuccess: ", data.time);
+  if (data.type === "success") {
+    // console.log("data :", data);
 
-  console.log("lengtSuccess: ", data.length);
-  ////logger file
+    console.log("timeSuccess: ", data.time);
 
-  logger.info(`length of success: ${data.length}`);
+    console.log("lengtSuccess: ", data.length);
+    ////logger file
 
-  /////alert in the desktop:
+    logger.info(`length of success: ${data.length}`);
 
-  notifier.notify({
-    title: "OTDR Success",
-    message: `Length of fiber: ${data.length} meter`,
+    /////alert in the desktop:
+
+    notifier.notify({
+      title: "OTDR Success",
+      message: `Length of fiber: ${data.length} meter`,
       wait: true, // Wait for User Action against Notification or times out. Same as timeout = 5 seconds
-      icon: path.join(__dirname, 'images/success.png'), // Absolute path (doesn't work on balloons)
+      icon: path.join(__dirname, "images/success.png"), // Absolute path (doesn't work on balloons)
+    });
+  } else {
+    if (data.type === "noFiber") {
+      // console.log("data :", data);
+      console.log("timeFailed: ", data.time);
 
-  });
+      console.log("no fiber");
+      ////logger file
 
+      logger.warn(`no fiber`);
+
+      notifier.notify({
+        title: "OTDR Faliure",
+        message: `No fiber`,
+        icon: path.join(__dirname, "images/failure.png"), // Absolute path (doesn't work on balloons)
+      });
+    } else if (data.type === "faliure") {
+      // console.log("data :", data);
+      console.log("timeFailed: ", data.time);
+
+      console.log("lengthFailed: ", data.length);
+      ////logger file
+
+      logger.warn(`Fiber break at: ${data.length} meter`);
+
+      notifier.notify({
+        title: "OTDR Faliure",
+        message: `Fiber break at : ${data.length} meter`,
+        icon: path.join(__dirname, "images/failure.png"), // Absolute path (doesn't work on balloons)
+      });
+    }
+
+    notifier.on("click", function (notifierObject, options, event) {
+      // Triggers if `wait: true` and user clicks notification
+
+      // console.log("fail click")
+      sk.emit("muteVolume");
+    });
+  }
 });
-
-
-
 
 sk.on("onError", (data) => {
   console.log("onError");
@@ -109,15 +97,80 @@ sk.on("onError", (data) => {
 
   ////logger file
 
-  logger.error(`error in request: ${data}`);
+  logger.error(`error in request: ${data.message}`);
 
+  notifier.notify({
+    title: "OTDR Faliure",
+    message: `Error in request: ${data.message}`,
+    icon: path.join(__dirname, "images/failure.png"), // Absolute path (doesn't work on balloons)
+  });
 
+  // notifier.on("click", function (notifierObject, options, event) {
+  //   // Triggers if `wait: true` and user clicks notification
+
+  //   // console.log("fail click")
+  //   sk.emit("muteVolume");
+  // });
 });
 
+// sk.on("onFailure", (data) => {
+//   console.log("onFailure");
+//   // console.log("data :", data);
+//   console.log("timeFailed: ", data.time);
 
+//   console.log("lengthFailed: ", data.length);
+//   ////logger file
 
+//   logger.warn(`length of failure: ${data.length}`);
 
+//   /////alert in the desktop:
+// if(Number(data.length)===0){
+//   notifier.notify({
+//     title: "OTDR Faliure",
+//     message: `no fiber`,
+//     icon: path.join(__dirname, 'images/failure.png'), // Absolute path (doesn't work on balloons)
+//   });
+// }
+// else{
+//    notifier.notify({
+//     title: "OTDR Faliure",
+//     message: `fiber break at : ${data.length}`,
+//     icon: path.join(__dirname, 'images/failure.png'), // Absolute path (doesn't work on balloons)
+//   });
+// }
 
+//   notifier.on('click', function (notifierObject, options, event) {
+//     // Triggers if `wait: true` and user clicks notification
+
+//     // console.log("fail click")
+//     sk.emit("muteVolume");
+
+//   });
+
+// });
+
+// sk.on("onSuccess", (data) => {
+//   console.log("onSuccess");
+//   // console.log("data :", data);
+
+//   console.log("timeSuccess: ", data.time);
+
+//   console.log("lengtSuccess: ", data.length);
+//   ////logger file
+
+//   logger.info(`length of success: ${data.length}`);
+
+//   /////alert in the desktop:
+
+//   notifier.notify({
+//     title: "OTDR Success",
+//     message: `Length of fiber: ${data.length} meter`,
+//       wait: true, // Wait for User Action against Notification or times out. Same as timeout = 5 seconds
+//       icon: path.join(__dirname, 'images/success.png'), // Absolute path (doesn't work on balloons)
+
+//   });
+
+// });
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -128,22 +181,22 @@ function createWindow() {
       nodeIntegration: false,
       worldSafeExecuteJavaScript: true,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
-    }
-  })
+      preload: path.join(__dirname, "preload.js"),
+    },
+  });
 
-  win.loadFile('index.html');
+  win.loadFile("index.html");
 }
 
 if (isDev) {
-  require('electron-reload')(__dirname, {
-    electron: path.join(__dirname, 'node_modules', '.bin', 'electron')
-  })
+  require("electron-reload")(__dirname, {
+    electron: path.join(__dirname, "node_modules", ".bin", "electron"),
+  });
 }
 
-ipcMain.on('notify', (_, message) => {
-  new Notification({title: 'OTDR Notifiation', body: message}).show();
-})
+ipcMain.on("notify", (_, message) => {
+  new Notification({ title: "OTDR Notifiation", body: message }).show();
+});
 
 // String
 // notifier.notify('Message');
@@ -154,11 +207,8 @@ ipcMain.on('notify', (_, message) => {
 //   message: 'Hellooooo, there!'
 // });
 
-
 // notifier.on("click", function (notifierObject, options, event) {
 // console.log('notifierObject :', notifierObject);
 //   // Triggers if `wait: true` and user clicks notification
 // });
-app.whenReady().then(createWindow)
-
-
+app.whenReady().then(createWindow);
